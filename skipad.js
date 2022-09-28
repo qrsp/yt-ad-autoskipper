@@ -8,6 +8,10 @@
   var timeoutId;
   var observedSkipBtn;
   var skipBtnObserver;
+  var isInAd = false;
+  var randomSecs;
+  var blackCanvas;
+  var blackCtx;
 
   /**
    * Loops over all the class names of buttons that we need to click to skip an
@@ -102,31 +106,56 @@
     skipBtnObserver.observe(parentWithDisplayStyle, { attributes: true });
   }
 
-  function muteIfAd () {
-    let color = window.getComputedStyle(document.querySelector('.ytp-play-progress')).backgroundColor
-    document.querySelector('video').muted = color === "rgb(255, 204, 0)";
-  }
-
   /**
    * Loops over all the buttons that need to be clicked and triggers the click
    * even on those buttons.
    */
-  function checkAndClickButtons() {
+  function checkAndClickButtonsIfAd() {
+    let color = window.getComputedStyle(document.querySelector('.ytp-play-progress')).backgroundColor
+    // document.querySelector('video').muted = color === "rgb(255, 204, 0)";
 
-    muteIfAd()
-
-    existingButtons(classList).forEach(button => {
-      // We want to make sure that we are only pressing the skip button when it
-      // is visible on the screen, so that it is like an actual user is pressing
-      // it. This also gives a user time to not-skip the ad in the future.
-      if (!isBtnVisible(button)) {
-        triggerClickWhenVisible(button);
-
-        return;
+    if(color === "rgb(255, 204, 0)" && !isInAd) {
+      isInAd = true;
+      document.querySelector('video').muted = true;
+      blackCanvas = document.querySelector('#mycanvas');
+      if (!blackCanvas) {
+        blackCanvas = document.createElement('canvas');
+        blackCanvas.setAttribute('id', 'mycanvas');
+        blackCanvas.setAttribute('style', 'position: absolute; width: 100%; height: 100vh;');
+        document.querySelector('.html5-video-container').appendChild(blackCanvas);
+        blackCtx = blackCanvas.getContext("2d");
+        blackCtx.style = '#000000';
       }
+      blackCtx.fillRect(0,0,blackCanvas.width,blackCanvas.height);
 
-      triggerClick(button);
-    })
+      randomSecs = Math.floor(Math.random() * 10) + 31;
+    } else if (color != "rgb(255, 204, 0)" && isInAd) {
+      isInAd = false;
+      document.querySelector('video').muted = false;
+      if (blackCtx) {
+        blackCtx.clearRect(0,0,blackCanvas.width,blackCanvas.height);
+      }
+    } else if (color === "rgb(255, 204, 0)" && isInAd) {
+
+      document.querySelector('video').muted = true;
+      secs = document.getElementsByTagName('video')[0].currentTime
+      if (secs > randomSecs) {
+
+        existingButtons(classList).forEach(button => {
+          // We want to make sure that we are only pressing the skip button when it
+          // is visible on the screen, so that it is like an actual user is pressing
+          // it. This also gives a user time to not-skip the ad in the future.
+          if (!isBtnVisible(button)) {
+            triggerClickWhenVisible(button);
+
+            return;
+          }
+
+          triggerClick(button);
+        });
+
+      }
+    }
   }
 
   /**
@@ -170,7 +199,7 @@
     }
 
     var observer = new MutationObserver(function() {
-      checkAndClickButtons();
+      checkAndClickButtonsIfAd();
     });
 
     observer.observe(ytdPlayer, { childList: true, subtree: true });
@@ -204,7 +233,7 @@
      * The interval of 2 seconds is arbitrary. I believe it is a good compromise.
      */
     timeoutId = setTimeout(function() {
-      checkAndClickButtons();
+      checkAndClickButtonsIfAd();
 
       initTimeout();
     }, 2000);

@@ -3,7 +3,7 @@
   "short_name": "YT Ad Auto-skipper-mute",
   "description":"YouTube Ad Skipper is an extension that mute all ads and auto skips ads after YouTube provides a skip ad button. It does not block an ad.",
   "manifest_version": 2,
-  "version":"0.5.0",
+  "version":"0.5.6",
   "author":"Izan Pérez Cosano",
   "homepage_url": "https://github.com/eperezcosano/yt-ad-autoskipper",
   "content_scripts":[
